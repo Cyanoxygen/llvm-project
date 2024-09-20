@@ -95,9 +95,8 @@ define signext i32 @not_i32(i32 signext %a) {
 ;
 ; GP64-LABEL: not_i32:
 ; GP64:       # %bb.0: # %entry
-; GP64-NEXT:    daddiu $1, $zero, -1
 ; GP64-NEXT:    jr $ra
-; GP64-NEXT:    xor $2, $4, $1
+; GP64-NEXT:    xor $2, $4, -1
 ;
 ; MM-LABEL: not_i32:
 ; MM:       # %bb.0: # %entry

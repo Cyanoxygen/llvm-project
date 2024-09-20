@@ -1211,25 +1211,24 @@ static SDValue performSHLCombine(SDNode *N, SelectionDAG &DAG,
                      DAG.getConstant(SMSize, DL, MVT::i32));
 }
 
-static SDValue performSignExtendCombine(SDNode *N, SelectionDAG &DAG,
-                                        TargetLowering::DAGCombinerInfo &DCI,
-                                        const MipsSubtarget &Subtarget) {
+static SDValue performSignExtendCombine(SDNode *N, SelectionDAG &DAG) {
   SDValue N0 = N->getOperand(0);
   EVT VT = N->getValueType(0);
+  SDValue TruncateOperand = N0.getOperand(0).getOperand(0);
 
-  //  $dst = sign_extend (xor (trunc $src), imm)
-  //  => $dst = sign_extend (trunc (xor $src, imm))
+  // Pattern match XOR.
+  //  $dst = (sign_extend (xor (trunc $src, i32), -1), i64)
+  //  => $dst = (xor ($src, -1), i64)
   if (N0.getOpcode() == ISD::XOR &&
       N0.getOperand(0).getOpcode() == ISD::TRUNCATE &&
       N0.getOperand(1).getOpcode() == ISD::Constant) {
-    SDValue TruncateOperand = N0.getOperand(0).getOperand(0);
-    APInt Mask = N0.getConstantOperandAPInt(1).zext(VT.getSizeInBits());
-
-    SDValue Xor = DAG.getNode(ISD::XOR, SDLoc(N), VT, TruncateOperand,
-                              DAG.getTargetConstant(Mask, SDLoc(N), VT));
-    SDValue Truncate =
-        DAG.getNode(ISD::TRUNCATE, SDLoc(N), N0->getValueType(0), Xor);
-    return DAG.getNode(ISD::SIGN_EXTEND, SDLoc(N), VT, Truncate);
+    if (VT == MVT::i64 && VT == TruncateOperand->getValueType(0)) {
+      APInt MinusOne(32, -1, true);
+      if (N0.getConstantOperandAPInt(1) == MinusOne) {
+        return DAG.getNode(ISD::XOR, SDLoc(N0), VT, TruncateOperand,
+                           DAG.getTargetConstant(-1, SDLoc(N0), VT));
+      }
+    }
   }
 
   return SDValue();
@@ -1261,7 +1260,7 @@ SDValue  MipsTargetLowering::PerformDAGCombine(SDNode *N, DAGCombinerInfo &DCI)
   case ISD::SUB:
     return performSUBCombine(N, DAG, DCI, Subtarget);
   case ISD::SIGN_EXTEND:
-    return performSignExtendCombine(N, DAG, DCI, Subtarget);
+    return performSignExtendCombine(N, DAG);
   }
 
   return SDValue();

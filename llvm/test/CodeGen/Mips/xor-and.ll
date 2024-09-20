@@ -4,9 +4,8 @@ define noundef signext i32 @xor_and(i32 noundef signext %a, i32 noundef signext 
 ; CHECK-LABEL: xor_and:
 ; CHECK:       # %bb.0: # %entry
 ; CHECK-NEXT:    and $1, $5, $4
-; CHECK-NEXT:    daddiu $2, $zero, -1
 ; CHECK-NEXT:    jr $ra
-; CHECK-NEXT:    xor $2, $1, $2
+; CHECK-NEXT:    xor $2, $1, -1
 
 entry:
   %0 = and i32 %b, %a
